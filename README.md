@@ -1,34 +1,97 @@
-# PinkRoosterAi.PersistentChatClient
+<div align="center">
+  <img src="img/logo_transparent.png" alt="PinkRoosterAi.PersistentChatClient Logo" width="300">
+  
+  # PinkRoosterAi.PersistentChatClient
+  
+  **A robust, flexible conversation persistence library for Microsoft.Extensions.AI chat clients**
+  
+  [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
+  [![NuGet](https://img.shields.io/badge/NuGet-1.0.0-orange)](https://www.nuget.org/packages/PinkRoosterAi.PersistentChatClient)
+  [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+  
+</div>
 
-A .NET 9.0 library that provides conversation persistence capabilities for Microsoft.Extensions.AI chat clients. This library acts as a decorator around existing chat clients to automatically persist conversation history and manage conversation IDs with flexible storage options.
+---
 
-## Features
+## 🚀 Overview
 
-- **Decorator Pattern Integration**: Seamlessly wraps any `Microsoft.Extensions.AI.IChatClient`
-- **Flexible Conversation ID Management**: Multiple strategies for automatic conversation ID generation
-- **Multiple Storage Backends**: In-memory and Entity Framework Core support
-- **Database Provider Support**: SQLite, PostgreSQL, and In-Memory providers
-- **Comprehensive Content Type Support**: Handles all Microsoft.Extensions.AI content types
-- **Streaming Support**: Works with both regular and streaming AI responses
-- **Transaction Safety**: Database transactions ensure data consistency
-- **Dependency Injection Ready**: Full support for .NET DI container
+PersistentChatClient is a production-ready .NET library that seamlessly adds conversation persistence to any `Microsoft.Extensions.AI.IChatClient` implementation. Built with the **decorator pattern**, it provides transparent conversation history management, flexible storage backends, and intelligent conversation ID generation without changing your existing chat client code.
 
-## Quick Start
+### Key Features
 
-### Installation
+- 🎭 **Decorator Pattern Integration** - Seamlessly wraps any existing `IChatClient` implementation
+- 🔌 **Flexible Storage Backends** - In-memory, Entity Framework Core with SQLite, PostgreSQL support
+- 🎯 **Smart Conversation ID Management** - Multiple automatic generation strategies
+- 📊 **Complete Content Type Support** - Handles all Microsoft.Extensions.AI content types
+- ⚡ **Streaming Support** - Works with both regular and streaming AI responses
+- 🛡️ **Transaction Safety** - Database transactions ensure data consistency
+- 🔗 **Dependency Injection Ready** - Full .NET DI container integration
 
-```console
-dotnet add package PersistentChatClient
-dotnet add package PersistentChatClient.EntityFramework
+---
+
+## 📦 Installation
+
+### Package Manager
+```powershell
+Install-Package PinkRoosterAi.PersistentChatClient
+Install-Package PinkRoosterAi.PersistentChatClient.EntityFramework
 ```
 
-### Basic Usage
+### .NET CLI
+```bash
+dotnet add package PinkRoosterAi.PersistentChatClient
+dotnet add package PinkRoosterAi.PersistentChatClient.EntityFramework
+```
 
+### PackageReference
+```xml
+<PackageReference Include="PinkRoosterAi.PersistentChatClient" Version="1.0.0" />
+<PackageReference Include="PinkRoosterAi.PersistentChatClient.EntityFramework" Version="1.0.0" />
+```
+
+---
+
+## 🏗️ Architecture
+
+PersistentChatClient implements a **decorator pattern** around `Microsoft.Extensions.AI.IChatClient`:
+
+```
+┌─────────────────────────────────────┐
+│    ConversationPersistenceChatClient │ ← Decorator wrapping IChatClient
+│  ┌─────────────────────────────────┐ │
+│  │      Original IChatClient       │ │ ← Your existing chat client
+│  └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────┐
+│      IConversationRepository        │ ← Persistence abstraction
+├─────────────────────────────────────┤
+│  InMemoryConversationRepository     │ ← Thread-safe in-memory storage
+│  EntityConversationRepository       │ ← Full database persistence
+│  CustomConversationRepository       │ ← Your custom implementation
+└─────────────────────────────────────┘
+```
+
+### Core Components
+
+- **`ConversationPersistenceChatClient`** - Main decorator providing transparent persistence
+- **`IConversationRepository`** - Storage abstraction for conversation management
+- **Repository Implementations**:
+  - `InMemoryConversationRepository` - Thread-safe in-memory storage
+  - `EntityConversationRepository` - Entity Framework Core database persistence
+- **`AutoConversationCreationMode`** - Intelligent conversation ID generation strategies
+
+---
+
+## ⚡ Quick Start
+
+### Basic Usage with Any Chat Client
 ```csharp
 using Microsoft.Extensions.AI;
-using PersistentChatClient;
+using PinkRoosterAi.PersistentChatClient;
 
-// Wrap any existing chat client
+// Wrap any existing chat client with persistence
 IChatClient client = yourExistingChatClient
     .AsBuilder()
     .UseConversationPersistence(
@@ -40,114 +103,112 @@ IChatClient client = yourExistingChatClient
         })
     .Build();
 
-// Use normally - conversation persistence is automatic
+// Use normally - conversation persistence happens automatically
 var response = await client.GetResponseAsync("Hello, how are you?");
+var followUp = await client.GetResponseAsync("What's the weather like?");
+// Both messages and responses are automatically persisted
 ```
 
 ### Entity Framework Setup
-
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
+using PinkRoosterAi.PersistentChatClient.EntityFramework;
 
-// Configure services
-services.AddChatStorage(options => 
+var builder = Host.CreateApplicationBuilder();
+
+// Configure chat storage with automatic migrations
+builder.Services.AddChatStorage(options => 
     options.UseSqlite("Data Source=conversations.db"));
 
-// Repository is automatically registered and can be injected
+// Register your chat client with persistence
+builder.Services.AddChatClient(services =>
+    new YourChatClient().AsIChatClient())
+    .UseConversationPersistence();
+
+var app = builder.Build();
+
+// Repository is automatically registered and available for injection
+var chatClient = app.Services.GetRequiredService<IChatClient>();
+var repository = app.Services.GetRequiredService<IConversationRepository>();
 ```
 
-## Architecture
-
-The library implements a **Decorator Pattern** around `Microsoft.Extensions.AI.IChatClient`, providing:
-
-### Core Components
-
-- **`ConversationPersistenceChatClient`**: Main decorator implementation
-- **`IConversationRepository`**: Core persistence abstraction
-- **Repository Implementations**:
-  - `InMemoryConversationRepository`: Thread-safe in-memory storage
-  - `EntityConversationRepository`: Full database persistence via EF Core
-
-### Conversation ID Generation Modes
-
-- **`None`**: Requires explicit conversation IDs
-- **`GenerateWhenMissing`**: Creates new GUID when ID is missing (default)
-- **`HashSystemAndUserMessage`**: Generates deterministic hash-based IDs from system + user message content
-
-## Entity Framework Integration
-
-The library provides comprehensive Entity Framework Core support with:
-
-### Data Model
-
-- **Table-Per-Hierarchy (TPH)** pattern for content types
-- **Performance-optimized indexes** for conversation and message queries
-- **Comprehensive content type support**: Text, Reasoning, Data, Uri, Error, Function calls/results, Usage metrics
-
-### Supported Database Providers
-
-- **SQLite**: `Microsoft.EntityFrameworkCore.Sqlite.Core`
-- **PostgreSQL**: `Npgsql.EntityFrameworkCore.PostgreSQL` 
-- **In-Memory**: `Microsoft.EntityFrameworkCore.InMemory`
-
-### Database Configuration
-
+### Database Provider Configuration
 ```csharp
-// SQLite
+// SQLite (recommended for single-user applications)
 services.AddChatStorage(options => 
     options.UseSqlite("Data Source=conversations.db"));
 
-// PostgreSQL
+// PostgreSQL (recommended for multi-user applications)
 services.AddChatStorage(options => 
     options.UseNpgsql("Host=localhost;Database=chats;Username=user;Password=pass"));
 
-// In-Memory (for testing)
+// In-Memory (perfect for testing)
 services.AddChatStorage(options => 
     options.UseInMemoryDatabase("TestDatabase"));
 ```
 
-## Configuration Options
+---
 
-### Auto-Creation Modes
+## 🎛️ Configuration
 
+### Conversation ID Generation Modes
 ```csharp
-options.AutoCreationMode = AutoConversationCreationMode.GenerateWhenMissing; // Default
+// Generate new GUID when conversation ID is missing (default)
+options.AutoCreationMode = AutoConversationCreationMode.GenerateWhenMissing;
+
+// Create deterministic hash-based IDs from system + user message content
 options.AutoCreationMode = AutoConversationCreationMode.HashSystemAndUserMessage;
+
+// Require explicit conversation IDs (throws if missing)
 options.AutoCreationMode = AutoConversationCreationMode.None;
 ```
 
-### Persistence Behavior
-
+### Persistence Behavior Options
 ```csharp
-// Continue streaming even if persistence fails (default: true)
-options.ContinueStreamingOnPersistenceFailure = true;
+builder.Services.AddChatClient(services => yourChatClient)
+    .UseConversationPersistence(options =>
+    {
+        // Continue streaming even if persistence fails (default: true)
+        options.ContinueStreamingOnPersistenceFailure = true;
+        
+        // Set conversation ID generation strategy
+        options.AutoCreationMode = AutoConversationCreationMode.GenerateWhenMissing;
+    });
 ```
 
-## Content Type Support
+---
 
-The library handles all Microsoft.Extensions.AI content types:
-
-- **Text Content**: Standard text messages
-- **Reasoning Content**: AI reasoning/thinking processes
-- **Data Content**: Structured data and binary content
-- **Uri Content**: Reference links and resources
-- **Error Content**: Error information and diagnostics
-- **Function Call Content**: Tool/function invocations
-- **Function Result Content**: Tool execution results
-- **Usage Content**: Token usage and performance metrics
-
-## Advanced Usage
+## 🔧 Advanced Usage
 
 ### Custom Repository Implementation
-
 ```csharp
-public class CustomRepository : IConversationRepository
+public class CustomConversationRepository : IConversationRepository
 {
+    private readonly IYourStorageSystem _storage;
+
+    public CustomConversationRepository(IYourStorageSystem storage)
+    {
+        _storage = storage;
+    }
+
     public async Task<ChatConversation> GetOrCreateConversationAsync(
         string conversationId,
         CancellationToken cancellationToken = default)
     {
-        // Custom implementation
+        var existing = await _storage.FindConversationAsync(conversationId);
+        if (existing != null)
+            return existing;
+
+        var newConversation = new ChatConversation
+        {
+            ConversationId = conversationId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Messages = new List<ChatMessage>()
+        };
+
+        await _storage.SaveConversationAsync(newConversation);
+        return newConversation;
     }
 
     public async Task SaveMessagesAsync(
@@ -156,101 +217,353 @@ public class CustomRepository : IConversationRepository
         ChatCompletion completion,
         CancellationToken cancellationToken = default)
     {
-        // Custom implementation
+        var conversation = await GetOrCreateConversationAsync(conversationId, cancellationToken);
+        
+        // Add new messages to conversation
+        foreach (var message in messages)
+        {
+            conversation.Messages.Add(message);
+        }
+        
+        conversation.UpdatedAt = DateTime.UtcNow;
+        await _storage.SaveConversationAsync(conversation);
     }
 }
 ```
 
-### Dependency Injection Configuration
-
+### Explicit Conversation Management
 ```csharp
-var builder = Host.CreateApplicationBuilder();
+// Use specific conversation ID
+var options = new ChatOptions
+{
+    AdditionalProperties = new Dictionary<string, object>
+    {
+        ["ConversationId"] = "user-session-12345"
+    }
+};
 
-// Register services
-builder.Services.AddChatStorage(options => 
-    options.UseSqlite("Data Source=conversations.db"));
+var response = await client.GetResponseAsync("Continue our previous discussion", options);
 
-builder.Services.AddChatClient(services =>
-    new YourChatClient().AsIChatClient())
-    .UseConversationPersistence();
+// Generate deterministic conversation IDs based on content
+var client = originalClient
+    .AsBuilder()
+    .UseConversationPersistence(options =>
+    {
+        options.AutoCreationMode = AutoConversationCreationMode.HashSystemAndUserMessage;
+    })
+    .Build();
 
-var app = builder.Build();
-
-// Use the configured client
-var chatClient = app.Services.GetRequiredService<IChatClient>();
+// Same system + user message combination will always use same conversation
+var response1 = await client.GetResponseAsync("What is machine learning?");
+var response2 = await client.GetResponseAsync("What is machine learning?"); 
+// Both responses will be in the same conversation
 ```
 
-## Testing
-
-The library includes comprehensive test coverage using:
-
-- **xUnit**: Test framework
-- **FluentAssertions**: Clear, readable assertions
-- **Moq**: Mock-based testing
-- **Entity Framework In-Memory**: Database testing
-
-### Running Tests
-
-```console
-dotnet test
+### Streaming Support
+```csharp
+// Streaming responses are automatically persisted
+await foreach (var update in client.GetStreamingResponseAsync("Tell me a long story"))
+{
+    Console.Write(update.Content);
+    // Each streaming chunk is automatically captured
+    // Final complete response is persisted to conversation
+}
 ```
-
-## Project Structure
-
-```
-PersistentChatClient/
-├── src/
-│   ├── PersistentChatClient/           # Core library
-│   └── PersistentChatClient.EntityFramework/  # EF Core integration
-└── tests/
-    └── PersistentChatClient.Tests/     # Unit tests
-```
-
-## Dependencies
-
-### Core Library
-- `Microsoft.Extensions.AI` (9.7.1)
-- `Microsoft.Extensions.DependencyInjection.Abstractions` (9.0.7)
-
-### Entity Framework Integration
-- `Microsoft.EntityFrameworkCore` (9.0.7)
-- `Microsoft.EntityFrameworkCore.Sqlite.Core` (9.0.7)
-- `Npgsql.EntityFrameworkCore.PostgreSQL` (9.0.4)
-
-## Requirements
-
-- **.NET 9.0** or later
-- **Microsoft.Extensions.AI** integration
-
-## Performance Characteristics
-
-- **Database Indexes**: Optimized for conversation and message retrieval
-- **Transaction Safety**: Proper database transaction handling
-- **Memory Efficiency**: Minimal memory overhead for decoration pattern
-- **Lazy Loading**: Virtual navigation properties for performance
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Changelog
-
-### Version 1.0.0
-- Initial release
-- Core conversation persistence functionality
-- Entity Framework integration
-- Multiple database provider support
-- Comprehensive content type support
 
 ---
 
-**Note**: This library is designed to work seamlessly with any `Microsoft.Extensions.AI.IChatClient` implementation, providing transparent conversation persistence without changing your existing chat client code.
+## 📊 Content Type Support
+
+The library handles all Microsoft.Extensions.AI content types seamlessly:
+
+### Supported Content Types
+| Content Type | Description | Persistence Behavior |
+|--------------|-------------|---------------------|
+| **Text Content** | Standard text messages | Full content preserved |
+| **Reasoning Content** | AI reasoning/thinking processes | Complete reasoning chain stored |
+| **Data Content** | Structured data and binary content | Serialized and stored |
+| **Uri Content** | Reference links and resources | URI and metadata preserved |
+| **Error Content** | Error information and diagnostics | Error details and context saved |
+| **Function Call Content** | Tool/function invocations | Call parameters and metadata stored |
+| **Function Result Content** | Tool execution results | Results and execution context preserved |
+| **Usage Content** | Token usage and performance metrics | Complete usage statistics tracked |
+
+### Advanced Content Example
+```csharp
+// All content types are automatically handled
+var messages = new List<ChatMessage>
+{
+    new ChatMessage(ChatRole.System, "You are a helpful assistant."),
+    new ChatMessage(ChatRole.User, "Analyze this data and call the weather API"),
+    new ChatMessage(ChatRole.Assistant, new FunctionCallContent("get_weather", new { city = "Paris" })),
+    new ChatMessage(ChatRole.Tool, new FunctionResultContent("get_weather", "Sunny, 22°C")),
+    new ChatMessage(ChatRole.Assistant, "The weather in Paris is sunny and 22°C.")
+};
+
+// All message types are preserved in conversation history
+var response = await client.GetResponseAsync(messages);
+```
+
+---
+
+## 🛠️ Database Schema
+
+The Entity Framework integration uses an optimized **Table-Per-Hierarchy (TPH)** pattern:
+
+### Database Tables
+```sql
+-- Conversations table
+CREATE TABLE Conversations (
+    ConversationId NVARCHAR(450) PRIMARY KEY,
+    CreatedAt DATETIME2 NOT NULL,
+    UpdatedAt DATETIME2 NOT NULL
+);
+
+-- Messages table with TPH for content types
+CREATE TABLE Messages (
+    Id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    ConversationId NVARCHAR(450) NOT NULL,
+    Role NVARCHAR(MAX) NOT NULL,
+    ContentType NVARCHAR(MAX) NOT NULL,
+    -- Content-specific columns
+    TextContent NVARCHAR(MAX),
+    DataContent NVARCHAR(MAX),
+    UriValue NVARCHAR(MAX),
+    -- ... additional content type columns
+    CreatedAt DATETIME2 NOT NULL,
+    FOREIGN KEY (ConversationId) REFERENCES Conversations(ConversationId)
+);
+
+-- Performance indexes
+CREATE INDEX IX_Messages_ConversationId ON Messages(ConversationId);
+CREATE INDEX IX_Messages_CreatedAt ON Messages(CreatedAt);
+```
+
+### Performance Characteristics
+- **Optimized indexes** for conversation and message retrieval
+- **Virtual navigation properties** for lazy loading
+- **Bulk insert optimization** for batch message saving
+- **Transaction isolation** ensuring data consistency
+
+---
+
+## 🧪 Testing
+
+### Unit Testing with Mock Repository
+```csharp
+[Test]
+public async Task Should_Persist_Messages_Automatically()
+{
+    // Arrange
+    var mockRepository = new Mock<IConversationRepository>();
+    var mockChatClient = new Mock<IChatClient>();
+    
+    mockChatClient
+        .Setup(c => c.GetResponseAsync(It.IsAny<IEnumerable<ChatMessage>>(), It.IsAny<ChatOptions>(), It.IsAny<CancellationToken>()))
+        .ReturnsAsync(new ChatCompletion(new ChatMessage(ChatRole.Assistant, "Test response")));
+
+    var persistentClient = new ConversationPersistenceChatClient(
+        mockChatClient.Object, 
+        mockRepository.Object,
+        new ConversationPersistenceOptions(),
+        NullLogger<ConversationPersistenceChatClient>.Instance);
+
+    // Act
+    await persistentClient.GetResponseAsync("Hello");
+
+    // Assert
+    mockRepository.Verify(r => r.SaveMessagesAsync(
+        It.IsAny<string>(), 
+        It.IsAny<IEnumerable<ChatMessage>>(), 
+        It.IsAny<ChatCompletion>(), 
+        It.IsAny<CancellationToken>()), Times.Once);
+}
+```
+
+### Integration Testing
+```csharp
+[Test]
+public async Task Should_Load_Conversation_History()
+{
+    // Arrange
+    var options = new DbContextOptionsBuilder<ConversationDbContext>()
+        .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+        .Options;
+
+    await using var context = new ConversationDbContext(options);
+    var repository = new EntityConversationRepository(context);
+    
+    // Create initial conversation
+    var conversation = await repository.GetOrCreateConversationAsync("test-conv");
+    await repository.SaveMessagesAsync("test-conv", 
+        new[] { new ChatMessage(ChatRole.User, "Hello") },
+        new ChatCompletion(new ChatMessage(ChatRole.Assistant, "Hi there!")));
+
+    // Act - Load conversation in new context
+    await using var newContext = new ConversationDbContext(options);
+    var newRepository = new EntityConversationRepository(newContext);
+    var loadedConversation = await newRepository.GetOrCreateConversationAsync("test-conv");
+
+    // Assert
+    Assert.AreEqual(2, loadedConversation.Messages.Count);
+    Assert.AreEqual("Hello", loadedConversation.Messages[0].Content.First().ToString());
+}
+```
+
+---
+
+## 📋 API Reference
+
+### ConversationPersistenceChatClient
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `GetResponseAsync(string, ChatOptions?, CancellationToken)` | Get response with automatic persistence | `Task<ChatCompletion>` |
+| `GetResponseAsync(IEnumerable<ChatMessage>, ChatOptions?, CancellationToken)` | Get response for message list with persistence | `Task<ChatCompletion>` |
+| `GetStreamingResponseAsync(string, ChatOptions?, CancellationToken)` | Get streaming response with persistence | `IAsyncEnumerable<StreamingChatCompletionUpdate>` |
+| `GetStreamingResponseAsync(IEnumerable<ChatMessage>, ChatOptions?, CancellationToken)` | Get streaming response for messages with persistence | `IAsyncEnumerable<StreamingChatCompletionUpdate>` |
+
+### IConversationRepository
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `GetOrCreateConversationAsync(string, CancellationToken)` | Retrieve or create conversation by ID | `Task<ChatConversation>` |
+| `SaveMessagesAsync(string, IEnumerable<ChatMessage>, ChatCompletion, CancellationToken)` | Persist messages and completion | `Task` |
+
+### Configuration Options
+
+| Property | Description | Default |
+|----------|-------------|---------|
+| `AutoCreationMode` | Conversation ID generation strategy | `GenerateWhenMissing` |
+| `ContinueStreamingOnPersistenceFailure` | Continue streaming if persistence fails | `true` |
+
+---
+
+## 🔧 Requirements
+
+- **.NET 9.0** or later
+- **Dependencies**:
+  - Microsoft.Extensions.AI (≥9.7.1)
+  - Microsoft.Extensions.DependencyInjection.Abstractions (≥9.0.7)
+  
+### Entity Framework Package
+- **Additional Dependencies**:
+  - Microsoft.EntityFrameworkCore (≥9.0.7)
+  - Microsoft.EntityFrameworkCore.Sqlite.Core (≥9.0.7)
+  - Npgsql.EntityFrameworkCore.PostgreSQL (≥9.0.4)
+
+---
+
+## 📚 Examples
+
+### Real-World Usage Scenarios
+
+#### Customer Support Chatbot
+```csharp
+// Configure persistent chat for customer support
+var supportClient = openAiClient
+    .AsBuilder()
+    .UseConversationPersistence(options =>
+    {
+        options.AutoCreationMode = AutoConversationCreationMode.GenerateWhenMissing;
+    })
+    .Build();
+
+// Each customer interaction maintains conversation history
+var response = await supportClient.GetResponseAsync(
+    "I'm having trouble with my order #12345",
+    new ChatOptions 
+    { 
+        AdditionalProperties = new() { ["ConversationId"] = $"customer-{customerId}" }
+    });
+```
+
+#### Multi-Turn AI Assistant
+```csharp
+// Configure AI assistant with conversation persistence
+services.AddChatStorage(options => 
+    options.UseNpgsql(connectionString));
+
+services.AddChatClient(services => 
+    new OpenAIClient(apiKey).AsChatClient("gpt-4"))
+    .UseConversationPersistence(options =>
+    {
+        options.AutoCreationMode = AutoConversationCreationMode.HashSystemAndUserMessage;
+    });
+
+// Assistant maintains context across sessions
+var assistant = serviceProvider.GetRequiredService<IChatClient>();
+var response1 = await assistant.GetResponseAsync("My name is John. Help me plan a trip to Paris.");
+var response2 = await assistant.GetResponseAsync("What restaurants should I visit there?");
+// Second response will reference John's name and Paris trip context
+```
+
+#### Educational Tutoring System
+```csharp
+// Configure tutoring system with session persistence
+var tutorClient = anthropicClient
+    .AsBuilder()
+    .UseConversationPersistence(options =>
+    {
+        options.AutoCreationMode = AutoConversationCreationMode.GenerateWhenMissing;
+        options.ContinueStreamingOnPersistenceFailure = true;
+    })
+    .Build();
+
+// Each student gets persistent learning conversations
+await foreach (var update in tutorClient.GetStreamingResponseAsync(
+    "Explain quantum physics in simple terms",
+    new ChatOptions
+    {
+        AdditionalProperties = new() { ["ConversationId"] = $"student-{studentId}-physics" }
+    }))
+{
+    await SendToStudent(update.Content);
+    // Learning progress is automatically tracked
+}
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Setup
+```bash
+git clone https://github.com/pinkroosterai/PersistentChatClient.git
+cd PersistentChatClient
+dotnet restore
+dotnet build
+dotnet test
+```
+
+### Project Structure
+```
+PersistentChatClient/
+├── src/
+│   ├── PersistentChatClient/                    # Core library
+│   └── PersistentChatClient.EntityFramework/    # EF Core integration
+└── tests/
+    └── PersistentChatClient.Tests/              # Unit tests
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🆘 Support
+
+- **Issues**: [GitHub Issues](https://github.com/pinkroosterai/PersistentChatClient/issues)
+- **Documentation**: [GitHub Wiki](https://github.com/pinkroosterai/PersistentChatClient/wiki)
+- **NuGet Package**: [PinkRoosterAi.PersistentChatClient](https://www.nuget.org/packages/PinkRoosterAi.PersistentChatClient)
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ by <a href="https://github.com/pinkroosterai">PinkRoosterAI</a></sub>
+</div>
