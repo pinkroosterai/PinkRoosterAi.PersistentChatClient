@@ -1,12 +1,11 @@
 <div align="center">
-  <img src="img/logo_transparent.png" alt="PinkRoosterAi.PersistentChatClient Logo" width="300">
+  <img src="https://avatars.githubusercontent.com/u/503132?v=4" alt="PinkRoosterAi.PersistentChatClient Logo" width="300">
   
   # PinkRoosterAi.PersistentChatClient
   
   **A robust, flexible conversation persistence library for Microsoft.Extensions.AI chat clients**
   
   [![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
-  [![NuGet](https://img.shields.io/badge/NuGet-1.0.0-orange)](https://www.nuget.org/packages/PinkRoosterAi.PersistentChatClient)
   [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
   
 </div>
@@ -26,28 +25,6 @@ PersistentChatClient is a production-ready .NET library that seamlessly adds con
 - ⚡ **Streaming Support** - Works with both regular and streaming AI responses
 - 🛡️ **Transaction Safety** - Database transactions ensure data consistency
 - 🔗 **Dependency Injection Ready** - Full .NET DI container integration
-
----
-
-## 📦 Installation
-
-### Package Manager
-```powershell
-Install-Package PinkRoosterAi.PersistentChatClient
-Install-Package PinkRoosterAi.PersistentChatClient.EntityFramework
-```
-
-### .NET CLI
-```bash
-dotnet add package PinkRoosterAi.PersistentChatClient
-dotnet add package PinkRoosterAi.PersistentChatClient.EntityFramework
-```
-
-### PackageReference
-```xml
-<PackageReference Include="PinkRoosterAi.PersistentChatClient" Version="1.0.0" />
-<PackageReference Include="PinkRoosterAi.PersistentChatClient.EntityFramework" Version="1.0.0" />
-```
 
 ---
 
