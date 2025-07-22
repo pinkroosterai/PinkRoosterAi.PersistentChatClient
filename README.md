@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://avatars.githubusercontent.com/u/503132?v=4" alt="PinkRoosterAi.PersistentChatClient Logo" width="300">
+  <img src="https://github.com/pinkroosterai/Persistify/raw/main/img/logo_transparent.png" alt="PinkRoosterAi.PersistentChatClient Logo" width="300">
   
   # PinkRoosterAi.PersistentChatClient
   
